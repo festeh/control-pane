@@ -10,7 +10,7 @@
 	let menuVisible = $state(false);
 	let menuX = $state(0);
 	let menuY = $state(0);
-	let menuItems = $state<{ label: string; action: () => void }[]>([]);
+	let menuItems = $state<{ label: string; icon?: string; action: () => void }[]>([]);
 
 	async function navigate(path?: string) {
 		loading = true;
@@ -35,6 +35,7 @@
 		menuItems = [
 			{
 				label: 'Launch in Claude Code',
+				icon: 'terminal',
 				action: () => launchClaude(fullPath).catch((err) => alert(err.message))
 			}
 		];
@@ -61,49 +62,74 @@
 </script>
 
 <div class="file-browser">
-	<nav class="breadcrumb">
-		<button onclick={() => navigate('/')}>/ </button>
-		{#each breadcrumbSegments(currentPath) as seg}
-			<span class="sep">/</span>
-			<button onclick={() => navigate(seg.path)}>{seg.name}</button>
+	<nav class="breadcrumb" aria-label="File path">
+		<button class="crumb" onclick={() => navigate('/')} title="Root">
+			<svg class="crumb-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+			</svg>
+		</button>
+		{#each breadcrumbSegments(currentPath) as seg, i}
+			<span class="crumb-sep">
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path d="M9 18l6-6-6-6" />
+				</svg>
+			</span>
+			<button class="crumb" onclick={() => navigate(seg.path)}>{seg.name}</button>
 		{/each}
 	</nav>
 
 	{#if loading}
-		<p class="status">Loading...</p>
+		<div class="loading-state">
+			{#each Array(6) as _, i}
+				<div class="skeleton-row" style="--i: {i}"></div>
+			{/each}
+		</div>
 	{:else if error}
-		<p class="status error">{error}</p>
+		<div class="error-state">
+			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+				<circle cx="12" cy="12" r="10" />
+				<line x1="15" y1="9" x2="9" y2="15" />
+				<line x1="9" y1="9" x2="15" y2="15" />
+			</svg>
+			<span>{error}</span>
+		</div>
 	{:else}
-		<table class="file-list">
-			<thead>
-				<tr>
-					<th>Name</th>
-					<th>Size</th>
-				</tr>
-			</thead>
-			<tbody>
-				<tr class="entry dir" onclick={() => navigate(currentPath + '/..')}>
-					<td>
-						<span class="icon">..</span>
-					</td>
-					<td></td>
-				</tr>
-				{#each entries as entry}
-					<tr
-						class="entry {entry.type}"
-						onclick={() =>
-							entry.type === 'dir' ? navigate(`${currentPath}/${entry.name}`) : null}
-						oncontextmenu={(e) => handleContextMenu(e, entry)}
-					>
-						<td>
-							<span class="icon">{entry.type === 'dir' ? '📁' : '📄'}</span>
-							{entry.name}
-						</td>
-						<td class="size">{entry.type === 'file' ? formatSize(entry.size) : ''}</td>
-					</tr>
-				{/each}
-			</tbody>
-		</table>
+		<div class="file-list">
+			<button class="file-row file-row--dir" onclick={() => navigate(currentPath + '/..')}>
+				<span class="file-icon">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+						<path d="M15 18l-6-6 6-6" />
+					</svg>
+				</span>
+				<span class="file-name">..</span>
+				<span class="file-size"></span>
+			</button>
+			{#each entries as entry, i}
+				<button
+					class="file-row"
+					class:file-row--dir={entry.type === 'dir'}
+					class:file-row--file={entry.type === 'file'}
+					style="--i: {i}"
+					onclick={() => entry.type === 'dir' ? navigate(`${currentPath}/${entry.name}`) : null}
+					oncontextmenu={(e) => handleContextMenu(e, entry)}
+				>
+					<span class="file-icon">
+						{#if entry.type === 'dir'}
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M2 6a2 2 0 0 1 2-2h5l2 2h9a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6z" />
+							</svg>
+						{:else}
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+								<path d="M14 2v6h6" />
+							</svg>
+						{/if}
+					</span>
+					<span class="file-name">{entry.name}</span>
+					<span class="file-size">{entry.type === 'file' ? formatSize(entry.size) : ''}</span>
+				</button>
+			{/each}
+		</div>
 	{/if}
 </div>
 
@@ -111,83 +137,188 @@
 
 <style>
 	.file-browser {
-		margin-top: 1rem;
+		margin-top: var(--space-2);
 	}
 
+	/* ═══ BREADCRUMB ═══ */
 	.breadcrumb {
 		display: flex;
 		align-items: center;
-		gap: 2px;
-		padding: 8px 0;
-		font-size: 0.875rem;
-		flex-wrap: wrap;
+		gap: var(--space-1);
+		padding: var(--space-3) var(--space-4);
+		background: var(--bg-elevated);
+		border: 1px solid var(--border-subtle);
+		border-radius: var(--radius-md);
+		font-size: var(--text-sm);
+		overflow-x: auto;
+		scrollbar-width: none;
 	}
 
-	.breadcrumb button {
-		background: none;
-		border: none;
-		color: var(--link-color, #89b4fa);
-		cursor: pointer;
-		padding: 2px 4px;
-		border-radius: 3px;
-		font-size: 0.875rem;
+	.breadcrumb::-webkit-scrollbar {
+		display: none;
 	}
 
-	.breadcrumb button:hover {
-		background: var(--hover-bg, #313244);
+	.crumb {
+		padding: var(--space-1) var(--space-2);
+		border-radius: var(--radius-sm);
+		color: var(--text-secondary);
+		font-size: var(--text-sm);
+		font-weight: var(--weight-medium);
+		white-space: nowrap;
+		transition: all var(--duration-fast) var(--ease-out);
 	}
 
-	.sep {
-		color: var(--dim-text, #6c7086);
+	.crumb:hover {
+		color: var(--accent-primary);
+		background: var(--accent-primary-glow);
 	}
 
-	.status {
-		padding: 1rem 0;
-		color: var(--dim-text, #6c7086);
+	.crumb-home {
+		width: 14px;
+		height: 14px;
+		display: block;
 	}
 
-	.status.error {
-		color: var(--error-color, #f38ba8);
+	.crumb-sep {
+		color: var(--text-tertiary);
+		display: flex;
+		align-items: center;
+		flex-shrink: 0;
 	}
 
+	.crumb-sep svg {
+		width: 12px;
+		height: 12px;
+	}
+
+	/* ═══ LOADING ═══ */
+	.loading-state {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2);
+		padding: var(--space-4) 0;
+	}
+
+	.skeleton-row {
+		height: 40px;
+		border-radius: var(--radius-md);
+		background: linear-gradient(
+			90deg,
+			var(--bg-elevated) 0%,
+			var(--bg-overlay) 50%,
+			var(--bg-elevated) 100%
+		);
+		background-size: 200% 100%;
+		animation: shimmer 1.5s ease-in-out infinite;
+		animation-delay: calc(var(--i) * 60ms);
+		opacity: calc(1 - var(--i) * 0.12);
+	}
+
+	@keyframes shimmer {
+		0% { background-position: 200% 0; }
+		100% { background-position: -200% 0; }
+	}
+
+	/* ═══ ERROR ═══ */
+	.error-state {
+		display: flex;
+		align-items: center;
+		gap: var(--space-3);
+		padding: var(--space-5);
+		color: var(--danger);
+		font-size: var(--text-sm);
+	}
+
+	.error-state svg {
+		width: 20px;
+		height: 20px;
+		flex-shrink: 0;
+	}
+
+	/* ═══ FILE LIST ═══ */
 	.file-list {
+		display: flex;
+		flex-direction: column;
+		margin-top: var(--space-3);
+		gap: 1px;
+	}
+
+	.file-row {
+		display: flex;
+		align-items: center;
+		gap: var(--space-3);
+		padding: var(--space-2) var(--space-3);
+		border-radius: var(--radius-md);
+		font-size: var(--text-sm);
+		color: var(--text-secondary);
+		transition: all var(--duration-fast) var(--ease-out);
 		width: 100%;
-		border-collapse: collapse;
-		font-size: 0.875rem;
-	}
-
-	.file-list th {
 		text-align: left;
-		padding: 6px 8px;
-		border-bottom: 1px solid var(--border-color, #45475a);
-		color: var(--dim-text, #6c7086);
-		font-weight: 500;
-	}
-
-	.entry {
+		border: 1px solid transparent;
 		cursor: default;
 	}
 
-	.entry.dir {
+	.file-row--dir {
 		cursor: pointer;
 	}
 
-	.entry td {
-		padding: 4px 8px;
-		border-bottom: 1px solid var(--border-color-subtle, #313244);
+	.file-row--dir:hover {
+		background: var(--bg-hover);
+		border-color: var(--border-subtle);
+		color: var(--text-primary);
 	}
 
-	.entry:hover {
-		background: var(--hover-bg, #1e1e2e);
+	.file-row--dir:hover .file-icon {
+		color: var(--accent-primary);
 	}
 
-	.icon {
-		margin-right: 6px;
+	.file-row--file:hover {
+		background: var(--bg-hover);
 	}
 
-	.size {
-		text-align: right;
-		color: var(--dim-text, #6c7086);
+	.file-icon {
+		width: 18px;
+		height: 18px;
+		flex-shrink: 0;
+		color: var(--text-tertiary);
+		transition: color var(--duration-fast) var(--ease-out);
+	}
+
+	.file-icon svg {
+		width: 100%;
+		height: 100%;
+	}
+
+	.file-row--dir .file-icon {
+		color: var(--accent-secondary);
+	}
+
+	.file-name {
+		flex: 1;
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
 		white-space: nowrap;
+	}
+
+	.file-size {
+		font-family: var(--font-mono);
+		font-size: var(--text-xs);
+		color: var(--text-tertiary);
+		white-space: nowrap;
+		flex-shrink: 0;
+		min-width: 60px;
+		text-align: right;
+	}
+
+	/* ═══ RESPONSIVE ═══ */
+	@media (max-width: 768px) {
+		.breadcrumb {
+			padding: var(--space-2) var(--space-3);
+		}
+
+		.file-row {
+			padding: var(--space-3) var(--space-2);
+		}
 	}
 </style>
