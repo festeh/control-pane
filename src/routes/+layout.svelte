@@ -4,7 +4,6 @@
 	import Nav from '$lib/components/Nav.svelte';
 
 	let { children } = $props();
-	let activeNav = $state('dashboard');
 </script>
 
 <svelte:head>
@@ -13,7 +12,7 @@
 </svelte:head>
 
 <div class="app-shell">
-	<Nav bind:active={activeNav} />
+	<Nav />
 
 	<main class="main-content">
 		{@render children()}

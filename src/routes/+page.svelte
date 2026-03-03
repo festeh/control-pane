@@ -1,15 +1,5 @@
 <script lang="ts">
-	import FileBrowser from '$lib/components/FileBrowser.svelte';
-
-	let hostname = $state('...');
-	let uptime = $state('...');
 	let currentTime = $state('');
-
-	async function fetchHostname() {
-		const res = await fetch('/api/hostname');
-		const data = await res.json();
-		hostname = data.hostname;
-	}
 
 	function updateTime() {
 		const now = new Date();
@@ -22,7 +12,6 @@
 	}
 
 	$effect(() => {
-		fetchHostname();
 		updateTime();
 		const interval = setInterval(updateTime, 1000);
 		return () => clearInterval(interval);
@@ -41,28 +30,10 @@
 		</div>
 	</header>
 
-	<!-- Status strip -->
-	<div class="status-strip">
-		<div class="status-item">
-			<span class="status-label">HOST</span>
-			<span class="status-value">{hostname}</span>
-		</div>
-		<div class="status-divider"></div>
-		<div class="status-item">
-			<span class="status-label">STATUS</span>
-			<span class="status-value status-online">OPERATIONAL</span>
-		</div>
-		<div class="status-divider"></div>
-		<div class="status-item">
-			<span class="status-label">ENGINE</span>
-			<span class="status-value">Claude Code</span>
-		</div>
-	</div>
-
 	<!-- Cards grid -->
 	<div class="cards-grid">
-		<!-- File Browser card (spans full width) -->
-		<div class="card card-files" style="--delay: 0;">
+		<!-- Files card -->
+		<a class="card card-link" href="/files" style="--delay: 0;">
 			<div class="card-header">
 				<div class="card-icon">
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -70,14 +41,11 @@
 					</svg>
 				</div>
 				<div>
-					<h2 class="card-title">File Browser</h2>
-					<p class="card-desc">Navigate filesystem, right-click folders to launch Claude Code</p>
+					<h2 class="card-title">Files</h2>
+					<p class="card-desc">Browse filesystem and launch Claude Code</p>
 				</div>
 			</div>
-			<div class="card-body">
-				<FileBrowser />
-			</div>
-		</div>
+		</a>
 
 		<!-- Quick Actions card -->
 		<div class="card card-actions" style="--delay: 1;">
@@ -95,7 +63,6 @@
 			<div class="card-body">
 				<div class="actions-list">
 					<button class="action-btn" onclick={() => {
-						const home = '~';
 						fetch('/api/actions/launch-claude', {
 							method: 'POST',
 							headers: { 'Content-Type': 'application/json' },
@@ -120,41 +87,6 @@
 							<span class="action-hint">Reload dashboard data</span>
 						</div>
 					</button>
-				</div>
-			</div>
-		</div>
-
-		<!-- System Info card -->
-		<div class="card card-system" style="--delay: 2;">
-			<div class="card-header">
-				<div class="card-icon card-icon--purple">
-					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-						<path d="M6 4h12v16H6zM2 9h4M2 15h4M18 9h4M18 15h4M9 1v3M15 1v3M9 20v3M15 20v3" />
-					</svg>
-				</div>
-				<div>
-					<h2 class="card-title">System</h2>
-					<p class="card-desc">Host information</p>
-				</div>
-			</div>
-			<div class="card-body">
-				<div class="sys-grid">
-					<div class="sys-item">
-						<span class="sys-label">Hostname</span>
-						<span class="sys-value">{hostname}</span>
-					</div>
-					<div class="sys-item">
-						<span class="sys-label">Platform</span>
-						<span class="sys-value">{navigator.platform || 'Unknown'}</span>
-					</div>
-					<div class="sys-item">
-						<span class="sys-label">Language</span>
-						<span class="sys-value">{navigator.language}</span>
-					</div>
-					<div class="sys-item">
-						<span class="sys-label">Cores</span>
-						<span class="sys-value">{navigator.hardwareConcurrency || '?'}</span>
-					</div>
 				</div>
 			</div>
 		</div>
@@ -205,57 +137,12 @@
 		text-shadow: 0 0 20px var(--accent-primary-dim);
 	}
 
-	/* ═══ STATUS STRIP ═══ */
-	.status-strip {
-		display: flex;
-		align-items: center;
-		gap: var(--space-5);
-		padding: var(--space-4) var(--space-5);
-		background: var(--bg-surface);
-		border: 1px solid var(--border-subtle);
-		border-radius: var(--radius-lg);
-		margin-bottom: var(--space-6);
-		overflow-x: auto;
-	}
-
-	.status-item {
-		display: flex;
-		align-items: center;
-		gap: var(--space-3);
-		white-space: nowrap;
-	}
-
-	.status-label {
-		font-family: var(--font-mono);
-		font-size: var(--text-xs);
-		font-weight: var(--weight-semibold);
-		letter-spacing: var(--tracking-widest);
-		color: var(--text-tertiary);
-		text-transform: uppercase;
-	}
-
-	.status-value {
-		font-size: var(--text-sm);
-		font-weight: var(--weight-medium);
-		color: var(--text-primary);
-	}
-
-	.status-online {
-		color: var(--success);
-	}
-
-	.status-divider {
-		width: 1px;
-		height: 20px;
-		background: var(--border-default);
-		flex-shrink: 0;
-	}
-
 	/* ═══ CARDS GRID ═══ */
 	.cards-grid {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		gap: var(--space-5);
+		align-items: start;
 	}
 
 	.card {
@@ -279,8 +166,10 @@
 		box-shadow: var(--shadow-md);
 	}
 
-	.card-files {
-		grid-column: 1 / -1;
+	.card-link {
+		text-decoration: none;
+		color: inherit;
+		cursor: pointer;
 	}
 
 	.card-header {
@@ -380,39 +269,6 @@
 		color: var(--text-tertiary);
 	}
 
-	/* ═══ SYSTEM INFO ═══ */
-	.sys-grid {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: var(--space-3);
-	}
-
-	.sys-item {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-1);
-		padding: var(--space-3);
-		background: var(--bg-elevated);
-		border-radius: var(--radius-md);
-		border: 1px solid var(--border-subtle);
-	}
-
-	.sys-label {
-		font-family: var(--font-mono);
-		font-size: var(--text-xs);
-		font-weight: var(--weight-medium);
-		letter-spacing: var(--tracking-widest);
-		text-transform: uppercase;
-		color: var(--text-tertiary);
-	}
-
-	.sys-value {
-		font-size: var(--text-sm);
-		font-weight: var(--weight-medium);
-		color: var(--text-primary);
-		word-break: break-all;
-	}
-
 	/* ═══ RESPONSIVE ═══ */
 	@media (max-width: 768px) {
 		.cards-grid {
@@ -426,21 +282,6 @@
 
 		.header-clock {
 			text-align: left;
-		}
-
-		.status-strip {
-			gap: var(--space-3);
-			padding: var(--space-3) var(--space-4);
-		}
-
-		.status-item {
-			flex-direction: column;
-			gap: var(--space-1);
-			align-items: flex-start;
-		}
-
-		.sys-grid {
-			grid-template-columns: 1fr;
 		}
 	}
 </style>

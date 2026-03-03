@@ -1,18 +1,24 @@
 <script lang="ts">
+	import { page } from '$app/state';
+
 	interface NavItem {
-		id: string;
+		href: string;
 		label: string;
 		icon: string;
 	}
 
-	let { active = $bindable('dashboard') }: { active: string } = $props();
-
 	const items: NavItem[] = [
-		{ id: 'dashboard', label: 'Dashboard', icon: 'grid' },
-		{ id: 'files', label: 'Files', icon: 'folder' },
-		{ id: 'system', label: 'System', icon: 'cpu' },
-		{ id: 'settings', label: 'Settings', icon: 'sliders' }
+		{ href: '/', label: 'Dashboard', icon: 'grid' },
+		{ href: '/files', label: 'Files', icon: 'folder' },
+		{ href: '/system', label: 'System', icon: 'cpu' },
+		{ href: '/settings', label: 'Settings', icon: 'sliders' }
 	];
+
+	function isActive(href: string): boolean {
+		const path = page.url.pathname;
+		if (href === '/') return path === '/';
+		return path.startsWith(href);
+	}
 
 	const iconPaths: Record<string, string> = {
 		grid: 'M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z',
@@ -41,20 +47,20 @@
 
 	<div class="sidebar-items">
 		{#each items as item}
-			<button
+			<a
 				class="nav-item"
-				class:active={active === item.id}
-				onclick={() => (active = item.id)}
-				aria-current={active === item.id ? 'page' : undefined}
+				class:active={isActive(item.href)}
+				href={item.href}
+				aria-current={isActive(item.href) ? 'page' : undefined}
 			>
 				<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
 					<path d={iconPaths[item.icon]} />
 				</svg>
 				<span class="nav-label">{item.label}</span>
-				{#if active === item.id}
+				{#if isActive(item.href)}
 					<span class="active-indicator"></span>
 				{/if}
-			</button>
+			</a>
 		{/each}
 	</div>
 
@@ -67,17 +73,17 @@
 <!-- Mobile bottom bar -->
 <nav class="bottombar" aria-label="Main navigation">
 	{#each items as item}
-		<button
+		<a
 			class="bottombar-item"
-			class:active={active === item.id}
-			onclick={() => (active = item.id)}
-			aria-current={active === item.id ? 'page' : undefined}
+			class:active={isActive(item.href)}
+			href={item.href}
+			aria-current={isActive(item.href) ? 'page' : undefined}
 		>
 			<svg class="bottombar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
 				<path d={iconPaths[item.icon]} />
 			</svg>
 			<span class="bottombar-label">{item.label}</span>
-		</button>
+		</a>
 	{/each}
 </nav>
 
@@ -147,6 +153,7 @@
 		transition: all var(--duration-base) var(--ease-out);
 		position: relative;
 		overflow: hidden;
+		text-decoration: none;
 	}
 
 	.nav-item:hover {
@@ -237,6 +244,7 @@
 		transition: color var(--duration-fast) var(--ease-out);
 		padding: var(--space-1);
 		border-radius: var(--radius-md);
+		text-decoration: none;
 	}
 
 	.bottombar-item.active {
