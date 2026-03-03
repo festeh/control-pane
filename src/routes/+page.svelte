@@ -1,4 +1,6 @@
 <script lang="ts">
+  import FileBrowser from '$lib/components/FileBrowser.svelte';
+
   let hostname = $state('loading...');
 
   async function fetchHostname() {
@@ -14,3 +16,5 @@
 
 <h1>Control Pane</h1>
 <p>Hostname: <strong>{hostname}</strong></p>
+
+<FileBrowser />
